@@ -1,0 +1,59 @@
+# OS / editor
+.DS_Store
+.idea/
+.vscode/
+*.swp
+*.swo
+
+# Environment / secrets
+.env
+.env.*
+!.env.example
+
+# Dependencies
+node_modules/
+packages/*/node_modules/
+
+# Build outputs
+dist/
+packages/*/dist/
+*.vsix
+
+# Local databases and generated exports
+archive.db
+*.db
+*.db-shm
+*.db-wal
+codex_session.jsonl
+sharegpt-from-codex.jsonl
+sharegpt.manifest.json
+training/
+training_data/
+
+# Pre-repository planning / execution notes
+plan.md
+DEVELOPMENT.md
+docs/operations-log.md
+docs/testing.md
+docs/mvp-qa.md
+PRD/
+
+# Legacy reference implementation remnants
+requirements.txt
+
+# Generated document binaries
+PRD/*.pdf
+
+# Logs and caches
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+.npm/
+.pnpm-store/
+.turbo/
+.cache/
+
+# Coverage
+coverage/
+.nyc_output/

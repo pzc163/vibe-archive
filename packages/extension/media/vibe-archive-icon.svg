@@ -1,0 +1,9 @@
+<svg width="128" height="128" viewBox="0 0 128 128" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <title>Vibe Archive</title>
+  <path d="M24 34C24 28.4772 28.4772 24 34 24H94C99.5228 24 104 28.4772 104 34V94C104 99.5228 99.5228 104 94 104H34C28.4772 104 24 99.5228 24 94V34Z" stroke="currentColor" stroke-width="8" stroke-linejoin="round"/>
+  <path d="M38 48H90" stroke="currentColor" stroke-width="8" stroke-linecap="round"/>
+  <path d="M40 66H74" stroke="currentColor" stroke-width="8" stroke-linecap="round"/>
+  <path d="M40 84H64" stroke="currentColor" stroke-width="8" stroke-linecap="round"/>
+  <path d="M86 63L90.5311 75.4689L103 80L90.5311 84.5311L86 97L81.4689 84.5311L69 80L81.4689 75.4689L86 63Z" fill="currentColor"/>
+  <path d="M71 20L73.3744 26.6256L80 29L73.3744 31.3744L71 38L68.6256 31.3744L62 29L68.6256 26.6256L71 20Z" fill="currentColor"/>
+</svg>

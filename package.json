@@ -1,0 +1,44 @@
+{
+  "name": "vibe-archive-workspace",
+  "version": "0.1.0-alpha.0",
+  "private": true,
+  "type": "module",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/pzc163/vibe-archive.git"
+  },
+  "homepage": "https://github.com/pzc163/vibe-archive#readme",
+  "bugs": {
+    "url": "https://github.com/pzc163/vibe-archive/issues"
+  },
+  "workspaces": [
+    "packages/*"
+  ],
+  "scripts": {
+    "compile": "npm run typecheck && node scripts/check-syntax.mjs",
+    "typecheck": "tsc --noEmit",
+    "test": "node --test test",
+    "test:integration": "node --test test/cli",
+    "check:schema-alignment": "node scripts/check-schema-alignment.mjs",
+    "check:profile-alignment": "node scripts/check-profile-alignment.mjs",
+    "check:manifest": "node scripts/check-manifest.mjs",
+    "check:cli-help": "node packages/cli/src/index.js --help",
+    "bundle:extension": "node scripts/bundle-extension.mjs",
+    "sync:extension-native": "node scripts/sync-extension-native-deps.mjs",
+    "package:vsix": "npm run bundle:extension && npm run sync:extension-native && node scripts/package-vsix.mjs",
+    "package": "npm run package:vsix"
+  },
+  "engines": {
+    "node": ">=20"
+  },
+  "devDependencies": {
+    "@types/better-sqlite3": "^7.6.13",
+    "@types/vscode": "^1.116.0",
+    "@vscode/vsce": "^3.9.1",
+    "esbuild": "^0.27.7",
+    "typescript": "^6.0.3"
+  },
+  "dependencies": {
+    "better-sqlite3": "^12.9.0"
+  }
+}

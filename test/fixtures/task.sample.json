@@ -1,0 +1,44 @@
+{
+  "schema": "vibe-archive.task.v0.4.1",
+  "id": "task_sample",
+  "created_at": "2026-04-25T10:30:00Z",
+  "updated_at": "2026-04-25T10:31:00Z",
+  "source": {
+    "app": "vscode",
+    "capture_mode": "import",
+    "ai_tool": "codex"
+  },
+  "task": {
+    "type": "feature",
+    "intent": "给 Search 组件加个防抖，300ms"
+  },
+  "sessions": [
+    {
+      "session_id": "sess_sample",
+      "ai_tool": "codex",
+      "created_at": "2026-04-25T10:30:00Z",
+      "ended_at": "2026-04-25T10:31:00Z",
+      "conversation": [
+        {
+          "role": "user",
+          "content": "给 Search 组件加个防抖，300ms",
+          "timestamp": "2026-04-25T10:30:00Z"
+        },
+        {
+          "role": "assistant",
+          "content": "我来为 Search 组件添加防抖功能...",
+          "timestamp": "2026-04-25T10:30:08Z"
+        }
+      ]
+    }
+  ],
+  "metadata": {
+    "domain": "frontend",
+    "languages": ["typescript"],
+    "message_count": 2,
+    "training_ready": true
+  },
+  "privacy": {
+    "paths_masked": true
+  }
+}

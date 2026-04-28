@@ -1,0 +1,95 @@
+{
+  "name": "vibe-archive",
+  "displayName": "Vibe Archive",
+  "description": "Local-first AI coding session archive and training dataset export tool.",
+  "version": "0.1.0-alpha.0",
+  "publisher": "pzc163",
+  "type": "module",
+  "private": true,
+  "icon": "media/vibe-archive-marketplace-icon.png",
+  "main": "dist/extension.js",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/pzc163/vibe-archive.git"
+  },
+  "homepage": "https://github.com/pzc163/vibe-archive#readme",
+  "bugs": {
+    "url": "https://github.com/pzc163/vibe-archive/issues"
+  },
+  "activationEvents": [
+    "onView:vibeArchive.sessions",
+    "onCommand:vibeArchive.refreshSessions",
+    "onCommand:vibeArchive.openSession"
+  ],
+  "engines": {
+    "vscode": "^1.90.0"
+  },
+  "contributes": {
+    "configuration": {
+      "title": "Vibe Archive",
+      "properties": {
+        "vibeArchive.databasePath": {
+          "type": "string",
+          "default": "",
+          "description": "Path to archive.db. Empty uses archive.db in the first workspace folder."
+        },
+        "vibeArchive.sessionsLimit": {
+          "type": "number",
+          "default": 100,
+          "minimum": 1,
+          "maximum": 500,
+          "description": "Maximum number of sessions shown in the TreeView."
+        }
+      }
+    },
+    "viewsContainers": {
+      "activitybar": [
+        {
+          "id": "vibeArchive",
+          "title": "Vibe Archive",
+          "icon": "media/vibe-archive-icon.svg"
+        }
+      ]
+    },
+    "views": {
+      "vibeArchive": [
+        {
+          "id": "vibeArchive.sessions",
+          "name": "Sessions"
+        }
+      ]
+    },
+    "commands": [
+      {
+        "command": "vibeArchive.refreshSessions",
+        "title": "Refresh Sessions",
+        "category": "Vibe Archive"
+      },
+      {
+        "command": "vibeArchive.openSession",
+        "title": "Open Session",
+        "category": "Vibe Archive"
+      },
+      {
+        "command": "vibeArchive.scanNow",
+        "title": "Scan Now",
+        "category": "Vibe Archive"
+      },
+      {
+        "command": "vibeArchive.importJsonl",
+        "title": "Import JSONL",
+        "category": "Vibe Archive"
+      },
+      {
+        "command": "vibeArchive.exportShareGPT",
+        "title": "Export ShareGPT Dataset",
+        "category": "Vibe Archive"
+      },
+      {
+        "command": "vibeArchive.purgeData",
+        "title": "Purge Local Archive",
+        "category": "Vibe Archive"
+      }
+    ]
+  }
+}

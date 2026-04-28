@@ -1,0 +1,11 @@
+{
+  "name": "@vibe-archive/cli",
+  "version": "0.1.0-alpha.0",
+  "type": "module",
+  "bin": {
+    "vibe-archive": "src/index.js"
+  },
+  "dependencies": {
+    "@vibe-archive/core": "0.1.0-alpha.0"
+  }
+}

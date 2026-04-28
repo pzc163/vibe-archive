@@ -1,0 +1,88 @@
+name: VSIX
+
+on:
+  pull_request:
+  push:
+    branches:
+      - main
+  workflow_dispatch:
+
+jobs:
+  test:
+    name: Test
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Compile
+        run: npm run compile
+
+      - name: Unit tests
+        run: npm test
+
+      - name: Integration tests
+        run: npm run test:integration
+
+      - name: Standard alignment checks
+        run: |
+          npm run check:schema-alignment
+          npm run check:profile-alignment
+          npm run check:manifest
+          npm run check:cli-help
+
+  package-vsix:
+    name: Package VSIX (${{ matrix.target }})
+    needs: test
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - target: darwin-arm64
+            os: macos-14
+          - target: darwin-x64
+            os: macos-13
+          - target: linux-x64
+            os: ubuntu-latest
+          - target: linux-arm64
+            os: ubuntu-24.04-arm
+          - target: win32-x64
+            os: windows-latest
+
+    runs-on: ${{ matrix.os }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Bundle extension
+        run: npm run bundle:extension
+
+      - name: Sync native binding
+        run: npm run sync:extension-native
+
+      - name: Package VSIX
+        run: node scripts/package-vsix.mjs --target ${{ matrix.target }}
+
+      - name: Upload VSIX
+        uses: actions/upload-artifact@v4
+        with:
+          name: vibe-archive-${{ matrix.target }}
+          path: dist/*.vsix
