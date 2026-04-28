@@ -519,3 +519,10 @@ npm run package:vsix
 - `npm run test:integration` 2 项通过。
 - schema/validator/profile/manifest/CLI help/manual-import/extension export/privacy lifecycle 检查全部通过。
 - `npm run package:vsix` 通过。
+
+远端复测观察：
+
+- 原始失败点 `Test` job 已通过。
+- `linux-x64`、`linux-arm64`、`win32-x64`、`darwin-arm64` VSIX 打包 job 已通过。
+- `darwin-x64` 使用 `macos-13` 长时间停留 queued。
+- 已将 `darwin-x64` runner 更新为 `macos-15-intel`，用于规避旧 Intel macOS runner 退役/排队问题。

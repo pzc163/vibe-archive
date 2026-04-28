@@ -64,3 +64,4 @@
 | 2026-04-28 15:59 | `gh run view` | 调查远端 CI 失败 | 定位失败原因为 GitHub Actions Node 22 将 `node --test test` 中的 `test` 当作模块路径加载，报 `MODULE_NOT_FOUND` |
 | 2026-04-28 15:59 | `apply_patch` | 修复测试脚本跨 Node 版本行为 | 新增 `scripts/run-tests.mjs` 递归收集 `.test.js` 文件，并将 `npm test` / `npm run test:integration` 改为显式文件列表运行 |
 | 2026-04-28 15:59 | `npm run compile` / `npm test` / `npm run test:integration` / `npm run check:*` / `npm run package:vsix` | 本地验证 CI 修复 | compile、31 个单元测试、2 个集成测试、全部 alignment/check 脚本与 VSIX 打包均通过 |
+| 2026-04-28 16:08 | `gh run watch` / `apply_patch` | 修复 macOS x64 runner 排队阻塞 | 确认测试 job 与多数平台打包已通过，`darwin-x64` 长时间停留 queued；将 runner 从已退役风险较高的 `macos-13` 迁移到 `macos-15-intel` |
