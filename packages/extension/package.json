@@ -2,10 +2,32 @@
   "name": "vibe-archive",
   "displayName": "Vibe Archive",
   "description": "Local-first AI coding session archive and training dataset export tool.",
-  "version": "0.1.0-alpha.0",
+  "version": "0.1.0",
   "publisher": "pzc163",
   "type": "module",
   "private": true,
+  "license": "MIT",
+  "preview": true,
+  "pricing": "Free",
+  "categories": [
+    "Machine Learning",
+    "Data Science",
+    "Other"
+  ],
+  "keywords": [
+    "codex",
+    "ai",
+    "archive",
+    "sharegpt",
+    "dataset",
+    "llm",
+    "training-data",
+    "local-first"
+  ],
+  "galleryBanner": {
+    "color": "#111827",
+    "theme": "dark"
+  },
   "icon": "media/vibe-archive-marketplace-icon.png",
   "main": "dist/extension.js",
   "repository": {

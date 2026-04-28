@@ -19,7 +19,7 @@
 | 插件手动导入入口 | `npm run check:manual-import` | 通过 |
 | 插件导出入口 | `npm run check:extension-export` | 通过 |
 | 隐私生命周期 | `npm run check:privacy-lifecycle` | 通过 |
-| VSIX 打包 | `npm run package:vsix` | 通过，生成 `dist/vibe-archive-0.1.0-alpha.0.vsix` |
+| VSIX 打包 | `npm run package:vsix` | 通过，生成 `dist/vibe-archive-0.1.0.vsix` |
 
 完整命令：
 

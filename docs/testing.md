@@ -526,3 +526,60 @@ npm run package:vsix
 - `linux-x64`、`linux-arm64`、`win32-x64`、`darwin-arm64` VSIX 打包 job 已通过。
 - `darwin-x64` 使用 `macos-13` 长时间停留 queued。
 - 已将 `darwin-x64` runner 更新为 `macos-15-intel`，用于规避旧 Intel macOS runner 退役/排队问题。
+
+## 19. 2026-04-28 Marketplace Pre-Release 元信息验证
+
+调整：
+
+- workspace/core/cli/extension 版本统一为 `0.1.0`。
+- Marketplace pre-release 采用 `0.1.0 + --pre-release`，不使用 `0.1.0-alpha.0`。
+- extension manifest 补齐：
+  - `license: MIT`
+  - `preview: true`
+  - `pricing: Free`
+  - `categories: Machine Learning, Data Science, Other`
+  - `keywords`
+  - `galleryBanner`
+- 新增 `packages/extension/CHANGELOG.md`。
+- 新增 `packages/extension/LICENSE`。
+- 刷新 `packages/extension/README.md` 作为 Marketplace 详情页。
+- 新增 `npm run package:vsix:pre-release`。
+- `scripts/package-vsix.mjs` 支持 `--pre-release`，并从 extension `package.json` 读取版本生成 VSIX 文件名。
+- GitHub Actions 多平台 VSIX artifact 打包命令已改为 `--pre-release`。
+
+验证命令：
+
+```bash
+npm run compile
+npm test
+npm run test:integration
+npm run check:schema-alignment
+npm run check:validator-alignment
+npm run check:profile-alignment
+npm run check:manifest
+npm run check:cli-help
+npm run check:manual-import
+npm run check:extension-export
+npm run check:privacy-lifecycle
+npm run package:vsix
+npm run package:vsix:pre-release
+node scripts/package-vsix.mjs --target darwin-arm64 --pre-release
+unzip -p dist/vibe-archive-0.1.0.vsix extension.vsixmanifest
+```
+
+验证结果：
+
+- `npm run compile` 通过。
+- `npm test` 31 项通过。
+- `npm run test:integration` 2 项通过。
+- schema/validator/profile/manifest/CLI help/manual-import/extension export/privacy lifecycle 检查全部通过。
+- `npm run package:vsix` 通过。
+- `npm run package:vsix:pre-release` 通过。
+- `node scripts/package-vsix.mjs --target darwin-arm64 --pre-release` 通过。
+- VSIX manifest 包含：
+  - `Version="0.1.0"`
+  - `Publisher="pzc163"`
+  - `GalleryFlags` 为 `Public Preview`
+  - `Microsoft.VisualStudio.Code.PreRelease=true`
+  - README、CHANGELOG、LICENSE、icon assets
+- platform VSIX manifest 包含 `TargetPlatform="darwin-arm64"`。

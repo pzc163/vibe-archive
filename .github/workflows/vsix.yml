@@ -83,7 +83,7 @@ jobs:
         run: npm run sync:extension-native
 
       - name: Package VSIX
-        run: node scripts/package-vsix.mjs --target ${{ matrix.target }}
+        run: node scripts/package-vsix.mjs --target ${{ matrix.target }} --pre-release
 
       - name: Upload VSIX
         uses: actions/upload-artifact@v4

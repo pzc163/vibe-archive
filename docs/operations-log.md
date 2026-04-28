@@ -65,3 +65,5 @@
 | 2026-04-28 15:59 | `apply_patch` | 修复测试脚本跨 Node 版本行为 | 新增 `scripts/run-tests.mjs` 递归收集 `.test.js` 文件，并将 `npm test` / `npm run test:integration` 改为显式文件列表运行 |
 | 2026-04-28 15:59 | `npm run compile` / `npm test` / `npm run test:integration` / `npm run check:*` / `npm run package:vsix` | 本地验证 CI 修复 | compile、31 个单元测试、2 个集成测试、全部 alignment/check 脚本与 VSIX 打包均通过 |
 | 2026-04-28 16:08 | `gh run watch` / `apply_patch` | 修复 macOS x64 runner 排队阻塞 | 确认测试 job 与多数平台打包已通过，`darwin-x64` 长时间停留 queued；将 runner 从已退役风险较高的 `macos-13` 迁移到 `macos-15-intel` |
+| 2026-04-28 17:52 | `apply_patch` | 修正 Marketplace pre-release 版本与元信息 | 将 workspace/core/cli/extension 版本统一为 `0.1.0`，extension 增加 categories、keywords、license、preview、pricing、galleryBanner，并补齐 Marketplace README、CHANGELOG、LICENSE |
+| 2026-04-28 17:52 | `npm run package:vsix:pre-release` / `unzip` | 验证 Marketplace pre-release VSIX | 生成 `dist/vibe-archive-0.1.0.vsix` 和 `dist/vibe-archive-0.1.0-darwin-arm64.vsix`；manifest 包含 `GalleryFlags=Public Preview`、`Microsoft.VisualStudio.Code.PreRelease=true`、license/changelog/readme/icon assets |

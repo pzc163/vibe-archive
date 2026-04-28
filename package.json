@@ -1,6 +1,6 @@
 {
   "name": "vibe-archive-workspace",
-  "version": "0.1.0-alpha.0",
+  "version": "0.1.0",
   "private": true,
   "type": "module",
   "repository": {
@@ -31,6 +31,7 @@
     "bundle:extension": "node scripts/bundle-extension.mjs",
     "sync:extension-native": "node scripts/sync-extension-native-deps.mjs",
     "package:vsix": "npm run bundle:extension && npm run sync:extension-native && node scripts/package-vsix.mjs",
+    "package:vsix:pre-release": "npm run bundle:extension && npm run sync:extension-native && node scripts/package-vsix.mjs --pre-release",
     "package": "npm run package:vsix"
   },
   "engines": {

@@ -111,8 +111,8 @@ npm run package:vsix
 当前本机 VSIX 产物位于：
 
 ```text
-dist/vibe-archive-0.1.0-alpha.0.vsix
-dist/vibe-archive-0.1.0-alpha.0-darwin-arm64.vsix
+dist/vibe-archive-0.1.0.vsix
+dist/vibe-archive-0.1.0-darwin-arm64.vsix
 ```
 
 当前发布配置：
@@ -122,7 +122,7 @@ extension id: pzc163.vibe-archive
 repository: https://github.com/pzc163/vibe-archive.git
 ```
 
-多平台 VSIX 构建矩阵位于 `.github/workflows/vsix.yml`，覆盖 `darwin-arm64`、`darwin-x64`、`linux-x64`、`linux-arm64`、`win32-x64`。当前限制：矩阵已配置，仍需在 GitHub Actions 实际运行后确认各平台 native binding 产物可用。
+多平台 VSIX 构建矩阵位于 `.github/workflows/vsix.yml`，覆盖 `darwin-arm64`、`darwin-x64`、`linux-x64`、`linux-arm64`、`win32-x64`。Marketplace pre-release 版本采用 `0.1.0 + --pre-release`，避免 Marketplace 不接受 semver prerelease tag 的问题。
 
 ---
 

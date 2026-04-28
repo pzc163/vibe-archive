@@ -798,9 +798,9 @@ npm test -- ShareGptExporter
 
 | 版本 | 目标 | 渠道 |
 |---|---|---|
-| `0.1.0-alpha` | 内部团队测试 | GitHub Release + VSIX 附件 |
-| `0.1.0-beta` | Deep-Think 社区内测 | VS Code Marketplace pre-release |
-| `0.2.0` | 公开 MVP | VS Code Marketplace + Open VSX |
+| `0.1.0` + `--pre-release` | 首次 Marketplace 内测 | VS Code Marketplace pre-release + GitHub Release VSIX |
+| `0.3.x` + `--pre-release` | 后续 pre-release 线 | VS Code Marketplace pre-release |
+| `0.2.x` | 公开 MVP stable 线 | VS Code Marketplace + Open VSX |
 
 ### 13.2 GitHub Actions
 

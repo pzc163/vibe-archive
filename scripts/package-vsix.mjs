@@ -1,23 +1,29 @@
 import { mkdir } from "node:fs/promises";
+import { readFileSync } from "node:fs";
 import { resolve } from "node:path";
 import { spawnSync } from "node:child_process";
 
 const target = readOption("--target") || process.env.VSCODE_TARGET || "";
+const preRelease = process.argv.includes("--pre-release") || process.env.VSCODE_PRE_RELEASE === "true";
 const suffix = target ? `-${target}` : "";
-const outPath = resolve(`dist/vibe-archive-0.1.0-alpha.0${suffix}.vsix`);
+const extensionPackage = JSON.parse(readFileSync(resolve("packages/extension/package.json"), "utf8"));
+const outPath = resolve(`dist/vibe-archive-${extensionPackage.version}${suffix}.vsix`);
 await mkdir(resolve("dist"), { recursive: true });
 
 const args = [
   "../../node_modules/@vscode/vsce/vsce",
   "package",
   "--no-dependencies",
-  "--skip-license",
   "--out",
   outPath
 ];
 
 if (target) {
   args.push("--target", target);
+}
+
+if (preRelease) {
+  args.push("--pre-release");
 }
 
 const result = spawnSync(

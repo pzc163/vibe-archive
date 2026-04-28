@@ -26,7 +26,7 @@ export class ManifestGenerator {
         schema_version: options.schemaVersion || TASK_SCHEMA_VERSION,
         profile: options.profile || "sharegpt",
         profile_version: options.profileVersion || "1.0.0",
-        generator: options.generator || "vibe-archive-cli@0.1.0-alpha.0",
+        generator: options.generator || "vibe-archive-cli@0.1.0",
         generated_at: generatedAt,
         repository: options.repository
       },
