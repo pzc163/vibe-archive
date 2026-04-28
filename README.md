@@ -10,9 +10,12 @@ npm run typecheck
 npm test
 npm run test:integration
 npm run check:schema-alignment
+npm run check:validator-alignment
 npm run check:profile-alignment
 npm run check:manifest
 npm run check:cli-help
+npm run check:extension-export
+npm run check:privacy-lifecycle
 npm run bundle:extension
 npm run package:vsix
 ```
@@ -28,11 +31,45 @@ node packages/cli/src/index.js export --format sharegpt --db ./archive.db --outp
 node packages/cli/src/index.js manifest verify /tmp/sharegpt.manifest.json --data /tmp/sharegpt.jsonl
 ```
 
+## MVP 数据与隐私策略
+
+Vibe Archive 是 local-first 工具。默认读取本机 Codex session 目录并写入当前工作区的 `archive.db`，不会上传源数据。默认隐私策略：
+
+- Codex 源文件只读扫描，不会删除或修改 `~/.codex`。
+- 路径在 parser 落库前脱敏，`/Users/<name>`、`/home/<name>`、`C:\Users\<name>` 会替换为 `{HOME}`。
+- `.env*`、`*.pem`、`*.key` 和常见 token/password/secret/key 字段会被脱敏。
+- raw snapshot 默认关闭。
+- ShareGPT 导出会同目录生成 `sharegpt.manifest.json`，并在写入后校验 checksum、record_count 和 ShareGPT Profile。
+- `Vibe Archive: Purge Local Archive` 只清除 Vibe Archive 本地数据：sessions、messages、tasks、diagnostics、exports、scan offsets；不会删除 Codex 源文件，也不会删除已经导出的 JSONL/Manifest 文件。
+
 开发计划见 `plan.md`，首轮 QA 见 `docs/mvp-qa.md`，测试记录见 `docs/testing.md`。
 
 ## VS Code Extension 手动验证
 
 当前 extension 已接入只读会话列表与详情页。它默认读取当前工作区根目录的 `archive.db`，也可以在 VS Code 设置中配置 `vibeArchive.databasePath`。
+
+首次激活时，extension 会请求读取本地 Codex session 文件的授权。授权状态存储在 VS Code extension `globalState` 中；拒绝授权时不会扫描 Codex 目录。Codex 路径探测顺序为：
+
+1. `vibeArchive.codex.customPath`
+2. `CODEX_HOME`
+3. `~/.codex`
+
+相关配置项：
+
+```text
+vibeArchive.autoScan
+vibeArchive.scanDays
+vibeArchive.codex.enabled
+vibeArchive.codex.customPath
+vibeArchive.storageBackend
+vibeArchive.databasePath
+vibeArchive.jsonStorePath
+vibeArchive.sessionsLimit
+```
+
+`Vibe Archive: Scan Now` 会在授权和路径探测通过后扫描最近 `vibeArchive.scanDays` 天的 Codex JSONL，生成 session、message、diagnostics 和 VibeTask 并写入本地 SQLite。扫描状态通过 `import_offsets` 记录；未变化文件会跳过，半行写入会保留 pending buffer，文件截断或轮转后会重置 offset。启用 `vibeArchive.autoScan` 后，extension 会监听 Codex session 文件变化并触发防抖增量导入。
+
+存储默认使用 SQLite，并通过目录化 migration 初始化 `sessions`、`messages`、`vibe_tasks`、`parse_diagnostics`、`exports` 和 `import_offsets`。如果 native SQLite 无法加载，可以将 `vibeArchive.storageBackend` 设置为 `json`，或由插件自动 fallback 到 JSON store。
 
 extension 运行入口为 `packages/extension/dist/extension.js`。打包时通过 esbuild 将 core 与 `better-sqlite3` 的 JS 层打入 bundle，并把 native binding 复制到：
 
@@ -66,6 +103,10 @@ npm run package:vsix
 2. 查看 `Sessions` TreeView。
 3. 点击某个 session。
 4. 确认详情 Webview 展示 Task、Diagnostics 和 Messages 预览。
+5. 执行 `Vibe Archive: Export ShareGPT Dataset`，选择输出 `sharegpt.jsonl`。
+6. 确认同目录生成 `sharegpt.manifest.json`。
+7. 执行 `node packages/cli/src/index.js manifest verify <manifest> --data <jsonl>` 确认导出可校验。
+8. 执行 `Vibe Archive: Purge Local Archive`，确认 TreeView 清空；再确认 `~/.codex` 源文件仍存在。
 
 当前本机 VSIX 产物位于：
 

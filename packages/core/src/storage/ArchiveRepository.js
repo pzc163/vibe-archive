@@ -31,5 +31,33 @@ export class ArchiveRepository {
     throw new Error("listTasks() not implemented");
   }
 
+  recordExport(_record) {
+    throw new Error("recordExport() not implemented");
+  }
+
+  listExports(_options = {}) {
+    throw new Error("listExports() not implemented");
+  }
+
+  getImportOffset(_sourcePath) {
+    throw new Error("getImportOffset() not implemented");
+  }
+
+  upsertImportOffset(_offset) {
+    throw new Error("upsertImportOffset() not implemented");
+  }
+
+  listImportOffsets() {
+    throw new Error("listImportOffsets() not implemented");
+  }
+
+  purgeAll() {
+    throw new Error("purgeAll() not implemented");
+  }
+
+  listMigrations() {
+    throw new Error("listMigrations() not implemented");
+  }
+
   close() {}
 }

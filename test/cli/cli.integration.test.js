@@ -4,6 +4,7 @@ import { mkdir, mkdtemp, readFile, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { spawnSync } from "node:child_process";
+import { SqliteArchiveRepository } from "../../packages/core/src/node.js";
 
 test("CLI validates and exports sample task", async () => {
   const dir = await mkdtemp(join(tmpdir(), "vibe-archive-"));
@@ -111,4 +112,11 @@ test("CLI imports Codex sessions into SQLite and lists sessions", async () => {
   assert.equal(exported.status, 0, exported.stderr);
   assert.match(await readFile(output, "utf8"), /实现导入命令/);
   assert.match(await readFile(join(dir, "sharegpt.manifest.json"), "utf8"), /vibe-archive.manifest.v1.0/);
+
+  const repository = new SqliteArchiveRepository(dbPath);
+  const exports = repository.listExports();
+  repository.close();
+  assert.equal(exports.length, 1);
+  assert.equal(exports[0].format, "sharegpt");
+  assert.equal(exports[0].manifestPath, join(dir, "sharegpt.manifest.json"));
 });

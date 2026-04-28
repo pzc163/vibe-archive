@@ -5,6 +5,7 @@ import {
   CodexScanner,
   ManifestGenerator,
   ManifestValidator,
+  PROFILE_VERSIONS,
   SemanticValidator,
   SessionTaskBuilder,
   ShareGptExporter
@@ -84,6 +85,7 @@ async function exportDataset(argv) {
   const tasks = input ? await loadTasksFromFile(input) : loadTasksFromDb(dbPath);
   const jsonl = new ShareGptExporter().exportJsonl(tasks);
   await writeFile(output, jsonl, "utf8");
+  const profileVersion = profileSemver(PROFILE_VERSIONS.sharegpt);
   const manifest = new ManifestGenerator().create({
     filePath: output,
     relativeFilePath: output.split("/").pop(),
@@ -92,11 +94,28 @@ async function exportDataset(argv) {
     taskIds: tasks.map((task) => task.id),
     format: "sharegpt",
     profile: "sharegpt",
-    profileVersion: "1.0.0",
+    profileVersion,
+    sourceTasksCount: tasks.length,
     sourceTools: countSourceTools(tasks)
   });
   const manifestPath = join(dirname(output), "sharegpt.manifest.json");
   await writeFile(manifestPath, JSON.stringify(manifest, null, 2) + "\n", "utf8");
+  const verification = await new ManifestValidator().verifyFile(manifest, output);
+  if (!verification.passed) {
+    throw new Error(`export verification failed: ${verification.errors.map((error) => error.message).join("; ")}`);
+  }
+  if (dbPath) {
+    recordDbExport(dbPath, {
+      id: manifest.dataset_id,
+      createdAt: manifest.source.generated_at,
+      format,
+      filePath: output,
+      manifestPath,
+      sessionCount: tasks.length,
+      messageCount: countExportedMessages(tasks),
+      filter: manifest.pipeline.filter_config
+    });
+  }
   console.log(`Exported ${tasks.length} records to ${output}`);
   console.log(`Wrote manifest to ${manifestPath}`);
 }
@@ -217,9 +236,12 @@ function readOption(argv, name) {
 function printResult(result) {
   if (result.passed) {
     console.log("OK");
+    if (result.warnings?.length) {
+      console.error(JSON.stringify({ warnings: result.warnings }, null, 2));
+    }
     return;
   }
-  console.error(JSON.stringify(result.errors, null, 2));
+  console.error(JSON.stringify({ errors: result.errors, warnings: result.warnings || [] }, null, 2));
   process.exitCode = 1;
 }
 
@@ -230,6 +252,20 @@ function countSourceTools(tasks) {
     counts[tool] = (counts[tool] || 0) + 1;
   }
   return counts;
+}
+
+function countExportedMessages(tasks) {
+  return tasks.reduce((total, task) => total + (task.sessions || []).reduce((sessionTotal, session) => sessionTotal + (session.conversation || []).length, 0), 0);
+}
+
+function profileSemver(profileVersion) {
+  return String(profileVersion || "").split("@").pop();
+}
+
+function recordDbExport(dbPath, record) {
+  const repository = new SqliteArchiveRepository(dbPath);
+  repository.recordExport(record);
+  repository.close();
 }
 
 function printSessionsTable(sessions) {

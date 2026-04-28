@@ -19,7 +19,12 @@
   "activationEvents": [
     "onView:vibeArchive.sessions",
     "onCommand:vibeArchive.refreshSessions",
-    "onCommand:vibeArchive.openSession"
+    "onCommand:vibeArchive.openSession",
+    "onCommand:vibeArchive.scanNow",
+    "onCommand:vibeArchive.importJsonl",
+    "onCommand:vibeArchive.exportShareGPT",
+    "onCommand:vibeArchive.purgeData",
+    "onCommand:vibeArchive.showLog"
   ],
   "engines": {
     "vscode": "^1.90.0"
@@ -28,10 +33,46 @@
     "configuration": {
       "title": "Vibe Archive",
       "properties": {
+        "vibeArchive.autoScan": {
+          "type": "boolean",
+          "default": false,
+          "description": "Automatically request permission and prepare Codex scanning when the extension activates."
+        },
+        "vibeArchive.scanDays": {
+          "type": "number",
+          "default": 30,
+          "minimum": 1,
+          "maximum": 365,
+          "description": "Number of recent days to scan from Codex session history."
+        },
+        "vibeArchive.codex.enabled": {
+          "type": "boolean",
+          "default": true,
+          "description": "Enable Codex session discovery."
+        },
+        "vibeArchive.codex.customPath": {
+          "type": "string",
+          "default": "",
+          "description": "Custom Codex home path. Empty uses CODEX_HOME first, then ~/.codex."
+        },
         "vibeArchive.databasePath": {
           "type": "string",
           "default": "",
           "description": "Path to archive.db. Empty uses archive.db in the first workspace folder."
+        },
+        "vibeArchive.storageBackend": {
+          "type": "string",
+          "enum": [
+            "sqlite",
+            "json"
+          ],
+          "default": "sqlite",
+          "description": "Storage backend. SQLite is the default; JSON is a fallback backend for native SQLite issues."
+        },
+        "vibeArchive.jsonStorePath": {
+          "type": "string",
+          "default": "",
+          "description": "Path to JSON archive store. Empty uses vibe-archive-store.json in the first workspace folder."
         },
         "vibeArchive.sessionsLimit": {
           "type": "number",
@@ -88,6 +129,11 @@
       {
         "command": "vibeArchive.purgeData",
         "title": "Purge Local Archive",
+        "category": "Vibe Archive"
+      },
+      {
+        "command": "vibeArchive.showLog",
+        "title": "Show Log",
         "category": "Vibe Archive"
       }
     ]

@@ -2,8 +2,7 @@ import Database from "better-sqlite3";
 import { dirname } from "node:path";
 import { mkdirSync } from "node:fs";
 import { ArchiveRepository } from "./ArchiveRepository.js";
-
-const MIGRATION_ID = "v0.4.1-init";
+import { SQLITE_MIGRATIONS } from "./migrations/index.js";
 
 export class SqliteArchiveRepository extends ArchiveRepository {
   constructor(dbPath = ":memory:", options = {}) {
@@ -22,99 +21,13 @@ export class SqliteArchiveRepository extends ArchiveRepository {
         id TEXT PRIMARY KEY,
         applied_at TEXT NOT NULL
       );
-
-      CREATE TABLE IF NOT EXISTS sessions (
-        rowid INTEGER PRIMARY KEY AUTOINCREMENT,
-        id TEXT NOT NULL UNIQUE,
-        source TEXT NOT NULL,
-        native_session_id TEXT NOT NULL,
-        source_path TEXT NOT NULL,
-        source_file_mtime TEXT,
-        source_file_size INTEGER,
-        parser_version TEXT NOT NULL,
-        title TEXT,
-        workspace_root TEXT,
-        created_at TEXT,
-        updated_at TEXT,
-        imported_at TEXT NOT NULL,
-        message_count INTEGER DEFAULT 0,
-        tool_call_count INTEGER DEFAULT 0,
-        changed_file_count INTEGER DEFAULT 0,
-        parse_status TEXT NOT NULL,
-        parse_error_count INTEGER DEFAULT 0,
-        tags_json TEXT DEFAULT '[]',
-        quality_score REAL,
-        UNIQUE(source, native_session_id)
-      );
-
-      CREATE TABLE IF NOT EXISTS messages (
-        rowid INTEGER PRIMARY KEY AUTOINCREMENT,
-        id TEXT NOT NULL UNIQUE,
-        session_id TEXT NOT NULL,
-        sequence INTEGER NOT NULL,
-        role TEXT NOT NULL,
-        content TEXT NOT NULL,
-        timestamp TEXT,
-        raw_type TEXT,
-        raw_json_ref TEXT,
-        tool_name TEXT,
-        tool_input_json TEXT,
-        tool_result_json TEXT,
-        referenced_files_json TEXT DEFAULT '[]',
-        changed_files_json TEXT DEFAULT '[]',
-        metadata_json TEXT DEFAULT '{}',
-        FOREIGN KEY (session_id) REFERENCES sessions(id) ON DELETE CASCADE,
-        UNIQUE(session_id, sequence)
-      );
-
-      CREATE TABLE IF NOT EXISTS vibe_tasks (
-        rowid INTEGER PRIMARY KEY AUTOINCREMENT,
-        id TEXT NOT NULL UNIQUE,
-        schema_version TEXT NOT NULL,
-        source TEXT NOT NULL,
-        session_id TEXT NOT NULL,
-        intent_summary TEXT NOT NULL,
-        intent_type TEXT,
-        language TEXT,
-        task_json TEXT NOT NULL,
-        privacy_json TEXT NOT NULL,
-        labels_json TEXT DEFAULT '{}',
-        created_at TEXT NOT NULL,
-        updated_at TEXT NOT NULL,
-        FOREIGN KEY (session_id) REFERENCES sessions(id) ON DELETE CASCADE
-      );
-
-      CREATE TABLE IF NOT EXISTS parse_diagnostics (
-        rowid INTEGER PRIMARY KEY AUTOINCREMENT,
-        session_id TEXT,
-        source_path TEXT NOT NULL,
-        parser_version TEXT NOT NULL,
-        total_lines INTEGER DEFAULT 0,
-        parsed_lines INTEGER DEFAULT 0,
-        failed_lines INTEGER DEFAULT 0,
-        error_samples_json TEXT DEFAULT '[]',
-        unknown_field_samples_json TEXT DEFAULT '[]',
-        created_at TEXT NOT NULL
-      );
-
-      CREATE TABLE IF NOT EXISTS exports (
-        rowid INTEGER PRIMARY KEY AUTOINCREMENT,
-        id TEXT NOT NULL UNIQUE,
-        created_at TEXT NOT NULL,
-        format TEXT NOT NULL,
-        file_path TEXT NOT NULL,
-        manifest_path TEXT,
-        session_count INTEGER DEFAULT 0,
-        message_count INTEGER DEFAULT 0,
-        filter_json TEXT DEFAULT '{}'
-      );
-
-      CREATE INDEX IF NOT EXISTS idx_sessions_source_created_at ON sessions(source, created_at DESC);
-      CREATE INDEX IF NOT EXISTS idx_vibe_tasks_source_created_at ON vibe_tasks(source, created_at DESC);
-      CREATE INDEX IF NOT EXISTS idx_messages_session_sequence ON messages(session_id, sequence);
     `);
-
-    this.db.prepare("INSERT OR IGNORE INTO schema_migrations (id, applied_at) VALUES (?, ?)").run(MIGRATION_ID, new Date().toISOString());
+    for (const migration of SQLITE_MIGRATIONS) {
+      const exists = this.db.prepare("SELECT id FROM schema_migrations WHERE id = ?").get(migration.id);
+      if (exists) continue;
+      this.db.exec(migration.up);
+      this.db.prepare("INSERT INTO schema_migrations (id, applied_at) VALUES (?, ?)").run(migration.id, new Date().toISOString());
+    }
   }
 
   upsertParsedSession(parsed, task) {
@@ -293,9 +206,107 @@ export class SqliteArchiveRepository extends ArchiveRepository {
     `).all(limit, offset).map((row) => JSON.parse(row.task_json));
   }
 
+  recordExport(record) {
+    this.initialize();
+    this.db.prepare(`
+      INSERT INTO exports (
+        id, created_at, format, file_path, manifest_path, session_count, message_count, filter_json
+      ) VALUES (
+        @id, @createdAt, @format, @filePath, @manifestPath, @sessionCount, @messageCount, @filterJson
+      )
+      ON CONFLICT(id) DO UPDATE SET
+        created_at = excluded.created_at,
+        format = excluded.format,
+        file_path = excluded.file_path,
+        manifest_path = excluded.manifest_path,
+        session_count = excluded.session_count,
+        message_count = excluded.message_count,
+        filter_json = excluded.filter_json
+    `).run({
+      id: record.id,
+      createdAt: record.createdAt || new Date().toISOString(),
+      format: record.format,
+      filePath: record.filePath,
+      manifestPath: record.manifestPath || null,
+      sessionCount: Number(record.sessionCount || 0),
+      messageCount: Number(record.messageCount || 0),
+      filterJson: JSON.stringify(record.filter || {})
+    });
+  }
+
+  listExports(options = {}) {
+    this.initialize();
+    const limit = Math.min(Number(options.limit || 100), 1000);
+    const offset = Number(options.offset || 0);
+    return this.db.prepare(`
+      SELECT * FROM exports
+      ORDER BY datetime(created_at) DESC, rowid DESC
+      LIMIT ? OFFSET ?
+    `).all(limit, offset).map(mapExportRow);
+  }
+
   listMigrations() {
     this.initialize();
     return this.db.prepare("SELECT * FROM schema_migrations ORDER BY applied_at ASC").all();
+  }
+
+  getImportOffset(sourcePath) {
+    this.initialize();
+    const row = this.db.prepare("SELECT * FROM import_offsets WHERE source_path = ?").get(sourcePath);
+    return row ? mapImportOffsetRow(row) : undefined;
+  }
+
+  upsertImportOffset(offset) {
+    this.initialize();
+    this.db.prepare(`
+      INSERT INTO import_offsets (
+        source_path, source, offset, file_size, file_mtime, pending_buffer, updated_at
+      ) VALUES (
+        @sourcePath, @source, @offset, @fileSize, @fileMtime, @pendingBuffer, @updatedAt
+      )
+      ON CONFLICT(source_path) DO UPDATE SET
+        source = excluded.source,
+        offset = excluded.offset,
+        file_size = excluded.file_size,
+        file_mtime = excluded.file_mtime,
+        pending_buffer = excluded.pending_buffer,
+        updated_at = excluded.updated_at
+    `).run({
+      sourcePath: offset.sourcePath,
+      source: offset.source || "codex",
+      offset: Number(offset.offset || 0),
+      fileSize: Number(offset.fileSize || 0),
+      fileMtime: offset.fileMtime || null,
+      pendingBuffer: offset.pendingBuffer || "",
+      updatedAt: offset.updatedAt || new Date().toISOString()
+    });
+  }
+
+  listImportOffsets() {
+    this.initialize();
+    return this.db.prepare("SELECT * FROM import_offsets ORDER BY source_path ASC").all().map(mapImportOffsetRow);
+  }
+
+  purgeAll() {
+    this.initialize();
+    const before = {
+      sessions: this.db.prepare("SELECT COUNT(*) AS count FROM sessions").get().count,
+      messages: this.db.prepare("SELECT COUNT(*) AS count FROM messages").get().count,
+      tasks: this.db.prepare("SELECT COUNT(*) AS count FROM vibe_tasks").get().count,
+      diagnostics: this.db.prepare("SELECT COUNT(*) AS count FROM parse_diagnostics").get().count,
+      exports: this.db.prepare("SELECT COUNT(*) AS count FROM exports").get().count,
+      importOffsets: this.db.prepare("SELECT COUNT(*) AS count FROM import_offsets").get().count
+    };
+    const transaction = this.db.transaction(() => {
+      this.db.prepare("DELETE FROM messages").run();
+      this.db.prepare("DELETE FROM vibe_tasks").run();
+      this.db.prepare("DELETE FROM parse_diagnostics").run();
+      this.db.prepare("DELETE FROM exports").run();
+      this.db.prepare("DELETE FROM import_offsets").run();
+      this.db.prepare("DELETE FROM sessions").run();
+    });
+    transaction();
+    return before;
   }
 
   close() {
@@ -357,5 +368,30 @@ function mapDiagnosticsRow(row) {
     errorSamples: JSON.parse(row.error_samples_json || "[]"),
     unknownFieldSamples: JSON.parse(row.unknown_field_samples_json || "[]"),
     createdAt: row.created_at
+  };
+}
+
+function mapImportOffsetRow(row) {
+  return {
+    sourcePath: row.source_path,
+    source: row.source,
+    offset: row.offset,
+    fileSize: row.file_size,
+    fileMtime: row.file_mtime,
+    pendingBuffer: row.pending_buffer || "",
+    updatedAt: row.updated_at
+  };
+}
+
+function mapExportRow(row) {
+  return {
+    id: row.id,
+    createdAt: row.created_at,
+    format: row.format,
+    filePath: row.file_path,
+    manifestPath: row.manifest_path,
+    sessionCount: row.session_count,
+    messageCount: row.message_count,
+    filter: JSON.parse(row.filter_json || "{}")
   };
 }

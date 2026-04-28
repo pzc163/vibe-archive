@@ -36,9 +36,13 @@ jobs:
       - name: Standard alignment checks
         run: |
           npm run check:schema-alignment
+          npm run check:validator-alignment
           npm run check:profile-alignment
           npm run check:manifest
           npm run check:cli-help
+          npm run check:manual-import
+          npm run check:extension-export
+          npm run check:privacy-lifecycle
 
   package-vsix:
     name: Package VSIX (${{ matrix.target }})

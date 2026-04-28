@@ -1,10 +1,13 @@
 import { SHAREGPT_PROFILE_VERSION } from "../model/types.js";
 import { PathMasker } from "../privacy/PathMasker.js";
+import { ShareGptProfileValidator } from "./ShareGptProfileValidator.js";
 
 export class ShareGptExporter {
   constructor(options = {}) {
     this.pathMasker = options.pathMasker || new PathMasker(options.privacy || {});
     this.includeToolMessages = Boolean(options.includeToolMessages);
+    this.validateOutput = options.validateOutput !== false;
+    this.profileValidator = options.profileValidator || new ShareGptProfileValidator();
   }
 
   exportTask(task) {
@@ -24,7 +27,7 @@ export class ShareGptExporter {
       });
     }
 
-    return {
+    const record = this.pathMasker.maskObject({
       id: task.id,
       conversations,
       metadata: {
@@ -34,7 +37,14 @@ export class ShareGptExporter {
         message_count: conversations.length,
         profile_version: SHAREGPT_PROFILE_VERSION
       }
-    };
+    });
+    if (this.validateOutput) {
+      const result = this.profileValidator.validateRecord(record);
+      if (!result.passed) {
+        throw new Error(`ShareGPT profile validation failed for task ${task.id}: ${result.errors.map((error) => error.message).join("; ")}`);
+      }
+    }
+    return record;
   }
 
   exportJsonl(tasks) {

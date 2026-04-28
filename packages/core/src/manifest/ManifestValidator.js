@@ -1,5 +1,6 @@
 import { readFile } from "node:fs/promises";
 import { MANIFEST_VERSION } from "../model/types.js";
+import { ShareGptProfileValidator } from "../export/ShareGptProfileValidator.js";
 import { checksumBuffer } from "./ManifestGenerator.js";
 
 export class ManifestValidator {
@@ -35,6 +36,10 @@ export class ManifestValidator {
     }
     if (recordCount !== manifest.content.record_count) {
       errors.push({ message: `record_count mismatch: manifest=${manifest.content.record_count}, actual=${recordCount}` });
+    }
+    if (manifest.source.profile === "sharegpt") {
+      const profileResult = new ShareGptProfileValidator().validateJsonl(content);
+      errors.push(...profileResult.errors.map((error) => ({ message: `sharegpt profile mismatch: ${error.message}` })));
     }
     return { passed: errors.length === 0, errors };
   }

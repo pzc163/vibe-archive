@@ -31,11 +31,7 @@ training/
 training_data/
 
 # Pre-repository planning / execution notes
-plan.md
 DEVELOPMENT.md
-docs/operations-log.md
-docs/testing.md
-docs/mvp-qa.md
 PRD/
 
 # Legacy reference implementation remnants

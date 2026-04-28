@@ -1,12 +1,21 @@
 import { basename } from "node:path";
 import { createId } from "../model/types.js";
 import { compactTitle } from "../model/text.js";
+import { PathMasker } from "../privacy/PathMasker.js";
+import { Parser } from "./Parser.js";
 
 export const CODEX_PARSER_VERSION = "codex-v1";
 
-export class CodexParser {
+export class CodexParser extends Parser {
+  constructor(options = {}) {
+    super();
+    this.pathMasker = options.pathMasker || new PathMasker(options.privacy || {});
+  }
+
   parseText(text, options = {}) {
-    const sourcePath = options.sourcePath || "manual-input.jsonl";
+    const pathMasker = options.pathMasker || this.pathMasker;
+    const rawSourcePath = options.sourcePath || "manual-input.jsonl";
+    const sourcePath = pathMasker.mask(rawSourcePath);
     const lines = splitJsonl(text);
     const messages = [];
     const errors = [];
@@ -27,15 +36,16 @@ export class CodexParser {
         if (raw.type === "turn_context" && raw.payload && typeof raw.payload === "object") {
           latestTurnContext = raw.payload;
         }
+        const unknownFields = collectUnknownFields(raw);
         const message = this.convertEvent(raw, {
           sequence: messages.length,
-          sourcePath,
-          importedAt
+          sourcePath: rawSourcePath,
+          importedAt,
+          unknownFields
         });
         if (message) {
-          messages.push(message);
+          messages.push(maskParsedMessage(message, pathMasker));
         }
-        const unknownFields = collectUnknownFields(raw);
         if (unknownFields.length && unknownFieldSamples.length < 20) {
           unknownFieldSamples.push({ line: item.number, fields: unknownFields });
         }
@@ -43,17 +53,17 @@ export class CodexParser {
         errors.push({
           line: item.number,
           message: error instanceof Error ? error.message : String(error),
-          sample: item.line.slice(0, 500)
+          sample: pathMasker.mask(item.line.slice(0, 500))
         });
       }
     }
 
-    const nativeSessionId = createNativeSessionId(sourcePath);
+    const nativeSessionId = createNativeSessionId(rawSourcePath);
     const totalLines = lines.filter((item) => item.line.trim()).length;
     const createdAt = messages[0]?.timestamp || options.fileMtime || importedAt;
     const updatedAt = messages[messages.length - 1]?.timestamp || options.fileMtime || importedAt;
     const sessionId = createId("sess_codex", nativeSessionId);
-    const workspaceRoot = sessionMeta?.cwd || latestTurnContext?.cwd || inferWorkspaceRoot(messages);
+    const workspaceRoot = maskOptionalString(pathMasker, sessionMeta?.cwd || latestTurnContext?.cwd || inferWorkspaceRoot(messages));
 
     return {
       session: {
@@ -115,6 +125,7 @@ export class CodexParser {
       referencedFiles: [],
       changedFiles: [],
       metadata: {
+        _unknownFields: context.unknownFields || [],
         sourceSpecific: raw
       }
     };
@@ -192,6 +203,7 @@ export class CodexParser {
         exitCode: payload.exit_code,
         model: payload.model,
         callId: payload.call_id,
+        _unknownFields: context.unknownFields || [],
         sourceSpecific: summarizePayloadForMetadata(payload)
       }
     };
@@ -273,6 +285,14 @@ export class CodexParser {
 
     return undefined;
   }
+}
+
+function maskParsedMessage(message, pathMasker) {
+  return pathMasker.maskObject(message);
+}
+
+function maskOptionalString(pathMasker, value) {
+  return value ? pathMasker.mask(value) : value;
 }
 
 export function splitJsonl(text) {
@@ -366,16 +386,35 @@ function summarizePayloadForMetadata(payload) {
 function inferChangedFiles(raw, toolInput, content) {
   const name = String(raw.command || raw.name || raw.tool_name || "").toLowerCase();
   const input = toolInput && typeof toolInput === "object" ? toolInput : {};
-  const explicit = [input.path, input.file_path, input.filename, raw.path, raw.file_path].filter(Boolean).map(String);
-  const looksLikeEdit = /write|edit|patch|apply|save|modify/.test(name) || explicit.length > 0;
+  const explicit = [input.path, input.file_path, input.filePath, input.filename, input.target_file, raw.path, raw.file_path, raw.filePath].filter(Boolean).map(String);
+  const looksLikeEdit = /write|edit|patch|apply|save|modify|create|delete|rename/.test(name) || explicit.length > 0 || /apply_patch|Begin Patch|Update File|Add File|Delete File/.test(content);
   if (!looksLikeEdit) return [];
-  return unique([...explicit, ...extractPaths(content)]);
+  return unique([...explicit, ...extractPatchPaths(content), ...extractPaths(content)]);
 }
 
 export function extractPaths(value) {
   const text = String(value || "");
-  const matches = text.match(/(?:[~./A-Za-z0-9_-]+\/)?[A-Za-z0-9_.-]+\.(?:js|jsx|ts|tsx|py|json|md|css|html|yml|yaml|toml|rs|go|java|php|rb|sh|sql)/g) || [];
-  return unique(matches);
+  const extension = "(?:js|jsx|ts|tsx|py|json|jsonl|md|css|html|yml|yaml|toml|rs|go|java|php|rb|sh|sql|mjs|cjs)";
+  const patterns = [
+    new RegExp(`(?:[A-Za-z]:\\\\)(?:[^\\\\\\s:*?"<>|\\r\\n]+\\\\)*[^\\\\\\s:*?"<>|\\r\\n]+\\.${extension}\\b`, "g"),
+    new RegExp(`(?:~|\\.{1,2})?/(?:[^/\\s]+/)*[^/\\s]+\\.${extension}\\b`, "g"),
+    new RegExp(`(?:[A-Za-z0-9_.-]+/)+[A-Za-z0-9_.-]+\\.${extension}\\b`, "g"),
+    new RegExp(`\\b[A-Za-z0-9_.-]+\\.${extension}\\b`, "g")
+  ];
+  const matches = [];
+  for (const pattern of patterns) {
+    matches.push(...text.match(pattern) || []);
+  }
+  return unique(matches.map((match) => match.trim()));
+}
+
+function extractPatchPaths(value) {
+  const text = String(value || "");
+  const matches = [];
+  for (const match of text.matchAll(/^\*\*\* (?:Update|Add|Delete) File: (.+)$/gm)) {
+    matches.push(match[1].trim());
+  }
+  return matches;
 }
 
 function unique(items) {
