@@ -61,3 +61,6 @@
 | 2026-04-28 15:40 | `apply_patch` | 完整化 CI 检查 | `.github/workflows/vsix.yml` 增加 validator/manual-import/extension-export/privacy-lifecycle 检查，覆盖 VSIX 打包前关键插件链路 |
 | 2026-04-28 15:40 | `apply_patch` | 刷新 QA 与项目管理事实源 | 更新 `docs/mvp-qa.md`、`plan.md`，将 M0-M10 当前事实、Done 项和 Deferred 项集中记录 |
 | 2026-04-28 15:40 | `npm run compile` / `npm test` / `npm run test:integration` / `npm run check:*` / `npm run package:vsix` | 验证手动导入、CI、QA、打包收口 | compile、31 个单元测试、2 个集成测试、schema/validator/profile/manifest/CLI help/manual-import/extension-export/privacy-lifecycle 检查与 VSIX 打包全部通过 |
+| 2026-04-28 15:59 | `gh run view` | 调查远端 CI 失败 | 定位失败原因为 GitHub Actions Node 22 将 `node --test test` 中的 `test` 当作模块路径加载，报 `MODULE_NOT_FOUND` |
+| 2026-04-28 15:59 | `apply_patch` | 修复测试脚本跨 Node 版本行为 | 新增 `scripts/run-tests.mjs` 递归收集 `.test.js` 文件，并将 `npm test` / `npm run test:integration` 改为显式文件列表运行 |
+| 2026-04-28 15:59 | `npm run compile` / `npm test` / `npm run test:integration` / `npm run check:*` / `npm run package:vsix` | 本地验证 CI 修复 | compile、31 个单元测试、2 个集成测试、全部 alignment/check 脚本与 VSIX 打包均通过 |

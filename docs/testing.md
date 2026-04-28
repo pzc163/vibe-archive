@@ -473,3 +473,49 @@ GUI 手工验收状态：
 - QA checklist 已在 `docs/mvp-qa.md` 中补齐。
 - 手动导入、TreeView、详情页、导出、Manifest verify、purge 的人工验收步骤已列出。
 - 实际 Extension Development Host 截图/录屏记录尚未执行，已在 `plan.md` 标记为 Deferred。
+
+## 18. 2026-04-28 远端 CI 修复验证
+
+远端失败现象：
+
+```text
+Error: Cannot find module '/home/runner/work/vibe-archive/vibe-archive/test'
+```
+
+原因：
+
+- GitHub Actions 使用 Node 22。
+- `node --test test` 在该环境中把 `test` 当作可加载模块路径处理。
+- 本机 Node 20 可运行该写法，但该行为不能作为跨版本 CI 契约。
+
+修复：
+
+- 新增 `scripts/run-tests.mjs`。
+- 脚本递归收集 `.test.js` 文件，去重、排序后将明确文件列表传给 `node --test`。
+- `npm test` 改为 `node scripts/run-tests.mjs test`。
+- `npm run test:integration` 改为 `node scripts/run-tests.mjs test/cli`。
+
+本地验证命令：
+
+```bash
+npm run compile
+npm test
+npm run test:integration
+npm run check:schema-alignment
+npm run check:validator-alignment
+npm run check:profile-alignment
+npm run check:manifest
+npm run check:cli-help
+npm run check:manual-import
+npm run check:extension-export
+npm run check:privacy-lifecycle
+npm run package:vsix
+```
+
+验证结果：
+
+- `npm run compile` 通过。
+- `npm test` 31 项通过。
+- `npm run test:integration` 2 项通过。
+- schema/validator/profile/manifest/CLI help/manual-import/extension export/privacy lifecycle 检查全部通过。
+- `npm run package:vsix` 通过。

@@ -17,8 +17,8 @@
   "scripts": {
     "compile": "npm run typecheck && node scripts/check-syntax.mjs",
     "typecheck": "tsc --noEmit",
-    "test": "node --test test",
-    "test:integration": "node --test test/cli",
+    "test": "node scripts/run-tests.mjs test",
+    "test:integration": "node scripts/run-tests.mjs test/cli",
     "check:schema-alignment": "node scripts/check-schema-alignment.mjs",
     "check:profile-alignment": "node scripts/check-profile-alignment.mjs",
     "check:validator-alignment": "node scripts/check-validator-alignment.mjs",
